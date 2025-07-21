@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import nodemailer from 'nodemailer'
-import { getPendingSenders } from '@/lib/getPendingSenders'
+import { getPendingRecipients } from '@/lib/getPendingRecipients'
 
 const prisma = new PrismaClient()
 
@@ -24,9 +24,7 @@ export async function GET() {
   }
 
   try {
-    const start = new Date(Date.now() - 12 * 60 * 60 * 1000)
-    const end = new Date()
-    const recipients = await getPendingSenders(start, end)
+    const recipients = await getPendingRecipients()
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -50,7 +48,8 @@ export async function GET() {
     // ✅ 发送正式自动回复邮件
     await transporter.sendMail({
       from: `"Evan Zhang" <${process.env.EMAIL_USER!}>`,
-      to: recipients.join(','),
+      to: process.env.EMAIL_USER!,
+      bcc: recipients,
       subject: setting.subject,
       html: setting.body,
       attachments: setting.attachmentUrl

@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getPendingSenders } from '@/lib/getPendingSenders'
+import { getPendingRecipients } from '@/lib/getPendingRecipients'
 
 export async function GET() {
-  const endDate = new Date()
-  const startDate = new Date(endDate.getTime() - 12 * 60 * 60 * 1000)
-
   try {
-    const emails = await getPendingSenders(startDate, endDate)
+    const emails = await getPendingRecipients()
     return NextResponse.json({ emails })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
