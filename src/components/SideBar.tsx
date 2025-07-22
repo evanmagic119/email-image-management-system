@@ -96,6 +96,7 @@ export default function SideBar() {
             <ListItemButton
               onClick={() => {
                 signOut()
+                localStorage.clear()
                 setDrawerOpen(false)
               }}
             >
