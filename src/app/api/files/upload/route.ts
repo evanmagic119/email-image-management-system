@@ -35,9 +35,7 @@ export async function POST(req: NextRequest) {
   ]
   const fileExtension = filename.split('.').pop()?.toLowerCase() || ''
 
-  const isImage =
-    filename === 'default-image.png' ||
-    /^\d{14}\.(png|jpe?g|webp)$/.test(filename)
+  const isImage = /^\d{14}\.(png|jpe?g|webp)$/.test(filename)
 
   const isAttachment = allowedExtensions.includes(fileExtension)
 
@@ -46,7 +44,7 @@ export async function POST(req: NextRequest) {
       {
         error:
           'Invalid filename: must be an image or a supported attachment type',
-        hint: 'Images must be named with a 14-digit timestamp (e.g. 20250719123045.png) or "default-image.png"; attachments must be of supported types like pdf, docx, etc.'
+        hint: 'Images must be named with a 14-digit timestamp (e.g. 20250719123045.png); attachments must be of supported types like pdf, docx, etc.'
       },
       { status: 400 }
     )
@@ -65,8 +63,8 @@ export async function POST(req: NextRequest) {
       })
     )
 
-    const publicUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE}/${filename}`
-    return NextResponse.json({ success: true, url: publicUrl })
+    const url = `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE}/${filename}`
+    return NextResponse.json({ success: true, url })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ status: 'error', message }, { status: 500 })

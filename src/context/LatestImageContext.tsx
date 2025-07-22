@@ -11,11 +11,9 @@ export type LatestImage = {
 
 const LatestImageContext = createContext<{
   latestImage: LatestImage
-  setLatestImage: (img: LatestImage) => void
   refreshLatestImage: () => Promise<void>
 }>({
   latestImage: null,
-  setLatestImage: () => {},
   refreshLatestImage: async () => {}
 })
 
@@ -48,9 +46,7 @@ export const LatestImageProvider = ({
   }, [])
 
   return (
-    <LatestImageContext.Provider
-      value={{ latestImage, setLatestImage, refreshLatestImage }}
-    >
+    <LatestImageContext.Provider value={{ latestImage, refreshLatestImage }}>
       {children}
     </LatestImageContext.Provider>
   )
