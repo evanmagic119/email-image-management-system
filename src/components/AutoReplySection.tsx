@@ -46,6 +46,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import LoadingBackdrop from '@/components/LoadingBackdrop'
+import { useLatestImage } from '@/context/LatestImageContext'
 
 export function AutoReplySection() {
   const [recipient, setRecipient] = useState('')
@@ -63,41 +64,11 @@ export function AutoReplySection() {
     url: string
   } | null>(null)
   const [isUsingLatestImage, setIsUsingLatestImage] = useState(true)
-  const [latestImage, setLatestImage] = useState<{
-    url: string
-    key: string
-    createdAt: string
-  } | null>(null)
+  const { latestImage } = useLatestImage()
   const [isActive, setIsActive] = useState(true)
   const [replyTime, setReplyTime] = useState<Dayjs | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
-
-  useEffect(() => {
-    if (!isUsingLatestImage) {
-      setLatestImage(null)
-      return
-    }
-
-    const fetchLatestImage = async () => {
-      try {
-        const res = await fetch('/api/files/list?page=1&pageSize=1')
-        const data = await res.json()
-        if (data.images && data.images.length > 0) {
-          const img = data.images[0]
-          setLatestImage({
-            ...img,
-            url: `${img.url}?t=${Date.now()}` // 加入时间戳
-          })
-        }
-      } catch (err) {
-        console.error('图片获取失败:', err)
-        setLatestImage(null)
-      }
-    }
-
-    fetchLatestImage()
-  }, [isUsingLatestImage])
 
   const editor = useEditor({
     extensions: [
@@ -249,44 +220,36 @@ export function AutoReplySection() {
     fetchInitialSetting()
   }, [editor])
 
-  const removeAllImageTags = (html: string): string => {
-    // 移除所有 R2 图片（带 .r2.dev 的）
-    return html
-      .replace(
-        /<p>\s*<img[^>]*src=["'][^"']*\.r2\.dev\/[^"']*["'][^>]*>\s*<\/p>/gi,
-        ''
-      )
-      .replace(/<img[^>]*src=["'][^"']*\.r2\.dev\/[^"']*["'][^>]*>/gi, '')
-      .replace(/<p>\s*<\/p>/g, '') // 清除空行
-      .trim()
+  const insertLatestImage = () => {
+    if (!editor || !latestImage) return
+
+    const imgUrlBase = latestImage.url.split('?')[0]
+    const expectedSrc = `${imgUrlBase}?_=${latestImage.createdAt}`
+
+    const html = editor.getHTML()
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const body = doc.body
+
+    // ✅ 判断是否已存在新图（不再管旧图）
+    const hasNewImage = Array.from(body.querySelectorAll('img')).some(
+      img => img.src === expectedSrc
+    )
+
+    // ✅ 没有就插入新图（不会删旧图）
+    if (isUsingLatestImage && !hasNewImage) {
+      const newImgHtml = `<p><img src="${expectedSrc}" style="max-width:100%; width:400px; height:auto; display:block; margin:12px 0;" draggable="true" /></p>`
+      editor.commands.insertContent(newImgHtml)
+    }
+
+    setBody(editor.getHTML())
   }
 
   useEffect(() => {
-    if (!editor || !latestImage) return
-
-    const html = editor.getHTML()
-    const cleanedHTML = removeAllImageTags(html)
-
-    if (isUsingLatestImage) {
-      const newHTML = cleanedHTML + `<p><img src="${latestImage.url}" /></p>`
-      editor.commands.setContent(newHTML)
-      setBody(newHTML)
-    } else {
-      editor.commands.setContent(cleanedHTML)
-      setBody(cleanedHTML)
+    if (editor && latestImage) {
+      insertLatestImage()
     }
-  }, [isUsingLatestImage, latestImage?.url])
-
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'latestImageUpdated') {
-        setIsUsingLatestImage(true) // 触发 useEffect 自动拉取新图片
-      }
-    }
-
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+  }, [editor, isUsingLatestImage, latestImage?.url])
 
   const handleSave = async () => {
     if (!replyTime) return alert('请选择时间')

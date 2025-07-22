@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { Box, Button, Container, Typography } from '@mui/material'
 import LoadingBackdrop from '@/components/LoadingBackdrop'
+import { useLatestImage } from '@/context/LatestImageContext'
 
 export default function UploadDefaultImage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -14,6 +15,7 @@ export default function UploadDefaultImage() {
   const [previewUrl, setPreviewUrl] = useState(
     `${defaultImageUrl}?t=${Date.now()}`
   )
+  const { setLatestImage, latestImage } = useLatestImage()
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file)
@@ -65,8 +67,15 @@ export default function UploadDefaultImage() {
         return
       }
 
+      const urlWithTimestamp = `${defaultImageUrl}?t=${Date.now()}`
       setMessage('✅ 默认图片上传成功！')
-      setPreviewUrl(`${defaultImageUrl}?t=${Date.now()}`)
+      setPreviewUrl(urlWithTimestamp)
+
+      setLatestImage({
+        key: 'default-image.png',
+        url: urlWithTimestamp,
+        createdAt: new Date().toISOString()
+      })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       setMessage(`❌ 上传失败：${message}`)

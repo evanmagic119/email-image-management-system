@@ -12,6 +12,7 @@ import {
   useTheme
 } from '@mui/material'
 import LoadingBackdrop from '@/components/LoadingBackdrop'
+import { useLatestImage } from '@/context/LatestImageContext'
 
 interface ImageItem {
   key: string
@@ -25,7 +26,7 @@ export default function ImageManager() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
-
+  const { setLatestImage, refreshLatestImage } = useLatestImage()
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const pageSize = 12
 
@@ -100,6 +101,7 @@ export default function ImageManager() {
         console.error('获取的图片是空的，请检查 R2')
         return
       }
+
       const now = new Date()
       const pad = (n: number) => n.toString().padStart(2, '0')
       const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
@@ -125,9 +127,16 @@ export default function ImageManager() {
         return
       }
 
+      setLatestImage({
+        key: filename,
+        url: `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE}/${filename}?t=${Date.now()}`,
+        createdAt: now.toISOString()
+      })
+
+      await refreshLatestImage()
+
       setTimeout(() => {
         fetchImages(1)
-        localStorage.setItem('latestImageUpdated', Date.now().toString())
       }, 500)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -163,9 +172,10 @@ export default function ImageManager() {
         return
       }
 
+      await refreshLatestImage()
+
       setTimeout(() => {
         fetchImages(page)
-        localStorage.setItem('latestImageUpdated', Date.now().toString())
       }, 500)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
