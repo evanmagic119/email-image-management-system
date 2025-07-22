@@ -63,12 +63,13 @@ export function AutoReplySection() {
     file: File
     url: string
   } | null>(null)
-  const [isUsingLatestImage, setIsUsingLatestImage] = useState(true)
-  const { latestImage } = useLatestImage()
+
   const [isActive, setIsActive] = useState(true)
   const [replyTime, setReplyTime] = useState<Dayjs | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [isUsingLatestImage, setIsUsingLatestImage] = useState(true)
+  const { latestImage } = useLatestImage()
 
   const editor = useEditor({
     extensions: [
@@ -137,7 +138,7 @@ export function AutoReplySection() {
       return
     }
 
-    const html = editor?.getHTML() || ''
+    let html = editor?.getHTML() || ''
     const isEmptyHtml =
       html.replace(/<p>(<br\s*\/?>|\s|&nbsp;)*<\/p>/gi, '').trim() === ''
 
@@ -146,10 +147,16 @@ export function AutoReplySection() {
       return
     }
 
+    // ✅ 如果启用了“插入最新图片”功能，则附加图片到正文末尾
+    if (isUsingLatestImage && latestImage?.url) {
+      const imageTag = `<p><img src="${latestImage.url}" style="max-width: 100%; width: 400px; height: auto; display: block; margin: 12px 0;" /></p>`
+      html += imageTag
+    }
+
     const formData = new FormData()
     formData.append('recipients', JSON.stringify(recipients))
     formData.append('subject', subject)
-    formData.append('body', body)
+    formData.append('body', html)
 
     if (attachment) {
       formData.append('attachmentUrl', attachment.url)
@@ -167,7 +174,6 @@ export function AutoReplySection() {
 
       if (res.ok) {
         alert('✅ 邮件发送成功！')
-        editor?.commands.setContent('')
       } else {
         alert('❌ 发送失败: ' + (data.error || '未知错误'))
       }
@@ -201,7 +207,9 @@ export function AutoReplySection() {
         setReplyTime(dayjs(replyTime, 'HH:mm'))
         setIsActive(isActive)
 
-        editor?.commands.setContent(body)
+        if (editor) {
+          editor.commands.setContent(body)
+        }
 
         if (attachmentUrl) {
           const filename = decodeURIComponent(
@@ -219,37 +227,6 @@ export function AutoReplySection() {
 
     fetchInitialSetting()
   }, [editor])
-
-  const insertLatestImage = () => {
-    if (!editor || !latestImage) return
-
-    const imgUrlBase = latestImage.url.split('?')[0]
-    const expectedSrc = `${imgUrlBase}?_=${latestImage.createdAt}`
-
-    const html = editor.getHTML()
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(html, 'text/html')
-    const body = doc.body
-
-    // ✅ 判断是否已存在新图（不再管旧图）
-    const hasNewImage = Array.from(body.querySelectorAll('img')).some(
-      img => img.src === expectedSrc
-    )
-
-    // ✅ 没有就插入新图（不会删旧图）
-    if (isUsingLatestImage && !hasNewImage) {
-      const newImgHtml = `<p><img src="${expectedSrc}" style="max-width:100%; width:400px; height:auto; display:block; margin:12px 0;" draggable="true" /></p>`
-      editor.commands.insertContent(newImgHtml)
-    }
-
-    setBody(editor.getHTML())
-  }
-
-  useEffect(() => {
-    if (editor && latestImage) {
-      insertLatestImage()
-    }
-  }, [editor, isUsingLatestImage, latestImage?.url])
 
   const handleSave = async () => {
     if (!replyTime) return alert('请选择时间')
@@ -600,28 +577,22 @@ export function AutoReplySection() {
           <FormControlLabel value='yes' control={<Radio />} label='是' />
           <FormControlLabel value='no' control={<Radio />} label='否' />
         </RadioGroup>
-
-        {isUsingLatestImage && latestImage && (
-          <Box mt={1}>
-            <Typography
-              color='text.secondary'
-              fontSize={14}
-              sx={{
-                wordBreak: 'break-all',
-                maxWidth: '100%',
-                overflowWrap: 'anywhere'
-              }}
-            >
-              将插入图片链接：
-              <a
-                href={latestImage.url}
-                target='_blank'
-                rel='noopener noreferrer'
-                style={{ display: 'inline-block', maxWidth: '100%' }}
-              >
-                {latestImage.url}
-              </a>
+        {isUsingLatestImage && latestImage?.url && (
+          <Box mt={2}>
+            <Typography variant='body2' color='text.secondary' gutterBottom>
+              即将插入的图片预览：
             </Typography>
+            <Box
+              component='img'
+              src={`${latestImage.url}?t=${Date.now()}`}
+              alt='最近图片预览'
+              sx={{
+                maxWidth: '100%',
+                width: 200,
+                height: 'auto',
+                mt: 1
+              }}
+            />
           </Box>
         )}
       </Box>
@@ -649,7 +620,7 @@ export function AutoReplySection() {
         </LocalizationProvider>
       </Box>
 
-      <Box mb={6}>
+      <Box>
         <Typography variant='h6' gutterBottom>
           是否激活
         </Typography>
@@ -664,7 +635,7 @@ export function AutoReplySection() {
         </RadioGroup>
       </Box>
 
-      <Box textAlign='center'>
+      <Box>
         <Button variant='contained' color='primary' onClick={handleSave}>
           保存设置
         </Button>

@@ -1,3 +1,4 @@
+// context/LatestImageContext.tsx
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
@@ -33,12 +34,12 @@ export const LatestImageProvider = ({
         const img = data.images[0]
         setLatestImage({
           key: img.key,
-          url: `${img.url}?t=${Date.now()}`,
+          url: `${img.url}`,
           createdAt: img.createdAt
         })
       }
     } catch (err) {
-      console.error('获取最新图片失败:', err)
+      console.error('刷新图片失败:', err)
     }
   }
 

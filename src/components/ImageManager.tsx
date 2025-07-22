@@ -26,7 +26,7 @@ export default function ImageManager() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
-  const { setLatestImage, refreshLatestImage } = useLatestImage()
+  const { refreshLatestImage } = useLatestImage()
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const pageSize = 12
 
@@ -126,18 +126,9 @@ export default function ImageManager() {
         console.error('上传失败:', data.error || '未知错误')
         return
       }
-
-      setLatestImage({
-        key: filename,
-        url: `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE}/${filename}?t=${Date.now()}`,
-        createdAt: now.toISOString()
-      })
-
       await refreshLatestImage()
 
-      setTimeout(() => {
-        fetchImages(1)
-      }, 500)
+      await fetchImages(1)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       alert('生成失败：' + message)
@@ -152,7 +143,7 @@ export default function ImageManager() {
       alert('非法文件名，无法替换')
       return
     }
-
+    setIsLoading(true)
     setUploadingKey(key)
 
     try {
@@ -174,13 +165,12 @@ export default function ImageManager() {
 
       await refreshLatestImage()
 
-      setTimeout(() => {
-        fetchImages(page)
-      }, 500)
+      await fetchImages(1)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       alert('替换失败：' + message)
     } finally {
+      setIsLoading(false)
       setUploadingKey(null)
     }
   }
