@@ -5,6 +5,7 @@ import { formatEmailTime } from '@/lib/imapUtils'
 export async function POST(req: NextRequest) {
   const { start, end } = await req.json()
 
+  console.log('start, end', start, end)
   if (!start || !end) {
     return NextResponse.json(
       { error: 'Missing start or end time' },
@@ -37,10 +38,13 @@ export async function POST(req: NextRequest) {
       for await (const msg of client.fetch('1:*', { envelope: true })) {
         const msgDate = msg.envelope?.date
         const from = msg.envelope?.from?.[0]?.address
-
         if (msgDate && from) {
           const date = new Date(msgDate)
-          if (date >= startTime && date <= endTime) {
+          if (
+            date >= startTime &&
+            date <= endTime &&
+            from !== process.env.EMAIL_USER!
+          ) {
             const { timeUTC, timeLocal } = formatEmailTime(date)
             emailList.push({ timeUTC, timeLocal, email: from })
           }

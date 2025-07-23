@@ -26,7 +26,7 @@ export async function getPendingRecipients(): Promise<string[]> {
       const from = msg.envelope?.from?.[0]?.address?.toLowerCase()
       if (msgDate && from) {
         const date = new Date(msgDate)
-        if (date >= start && date <= end) {
+        if (date >= start && date <= end && from !== process.env.EMAIL_USER!) {
           fromSet.add(from)
         }
       }
