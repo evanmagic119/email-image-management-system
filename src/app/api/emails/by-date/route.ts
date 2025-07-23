@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { formatEmailTime } from '@/lib/imapUtils'
 
 export async function POST(req: NextRequest) {
-  const { start, end } = await req.json()
+  const { start, end, timezone = 'UTC' } = await req.json()
 
   if (!start || !end) {
     return NextResponse.json(
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
             date <= endTime &&
             from !== process.env.EMAIL_USER!
           ) {
-            const { timeUTC, timeLocal } = formatEmailTime(date)
+            const { timeUTC, timeLocal } = formatEmailTime(date, timezone)
+
             emailList.push({ timeUTC, timeLocal, email: from })
           }
         }

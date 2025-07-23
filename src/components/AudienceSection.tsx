@@ -53,7 +53,11 @@ export function AudienceSection() {
       const res = await fetch('/api/emails/by-date', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start: startStr, end: endStr })
+        body: JSON.stringify({
+          start: startStr,
+          end: endStr,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        })
       })
 
       const data = await res.json()
