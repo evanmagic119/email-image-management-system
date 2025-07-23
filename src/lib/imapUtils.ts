@@ -15,6 +15,8 @@ dayjs.extend(timezone)
 export const formatEmailTime = (date: Date, timeZone: string = 'UTC') => {
   return {
     timeUTC: dayjs(date).utc().format('MMMM D, YYYY [at] hh:mm A [UTC]'),
-    timeLocal: dayjs.tz(date, timeZone).format('MMMM D, YYYY [at] hh:mm A [z]')
+    timeLocal: dayjs
+      .tz(date, timeZone)
+      .format('MMMM D, YYYY [at] hh:mm A [GMT]Z')
   }
 }
