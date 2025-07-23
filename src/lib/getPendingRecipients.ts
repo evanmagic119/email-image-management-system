@@ -1,7 +1,10 @@
 // lib/email/getPendingRecipients.ts
 import { ImapFlow } from 'imapflow'
+import { getTimeRange } from './imapUtils'
 
 export async function getPendingRecipients(): Promise<string[]> {
+  const { start, end } = getTimeRange(1)
+
   const client = new ImapFlow({
     host: 'imap.gmail.com',
     port: 993,
@@ -14,10 +17,7 @@ export async function getPendingRecipients(): Promise<string[]> {
   })
 
   await client.connect()
-
   const fromSet = new Set<string>()
-  const now = new Date()
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
 
   const fetchFromMailbox = async (mailbox: string) => {
     await client.mailboxOpen(mailbox)
@@ -26,18 +26,16 @@ export async function getPendingRecipients(): Promise<string[]> {
       const from = msg.envelope?.from?.[0]?.address?.toLowerCase()
       if (msgDate && from) {
         const date = new Date(msgDate)
-        if (date >= oneHourAgo && date <= now) {
+        if (date >= start && date <= end) {
           fromSet.add(from)
         }
       }
     }
   }
 
-  // 收件箱 + 垃圾箱
   await fetchFromMailbox('INBOX')
   await fetchFromMailbox('[Gmail]/Spam')
 
   await client.logout()
-
   return Array.from(fromSet)
 }

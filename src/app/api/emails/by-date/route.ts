@@ -1,14 +1,6 @@
-// api/emails/by-date
-
 import { ImapFlow } from 'imapflow'
 import { NextRequest, NextResponse } from 'next/server'
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-import 'dotenv/config'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
+import { formatEmailTime } from '@/lib/imapUtils'
 
 export async function POST(req: NextRequest) {
   const { start, end } = await req.json()
@@ -40,7 +32,6 @@ export async function POST(req: NextRequest) {
     const emailList: { timeUTC: string; timeLocal: string; email: string }[] =
       []
 
-    // 一个复用的抓取函数（可用于 INBOX + Spam）
     const fetchEmails = async (mailbox: string) => {
       await client.mailboxOpen(mailbox)
       for await (const msg of client.fetch('1:*', { envelope: true })) {
@@ -50,24 +41,13 @@ export async function POST(req: NextRequest) {
         if (msgDate && from) {
           const date = new Date(msgDate)
           if (date >= startTime && date <= endTime) {
-            const utcTimeStr = dayjs(date)
-              .utc()
-              .format('MMMM D, YYYY [at] hh:mm A [UTC]')
-            const localTimeStr = dayjs(date)
-              .tz(dayjs.tz.guess())
-              .format('MMMM D, YYYY [at] hh:mm A [GMT]Z')
-
-            emailList.push({
-              timeUTC: utcTimeStr,
-              timeLocal: localTimeStr,
-              email: from
-            })
+            const { timeUTC, timeLocal } = formatEmailTime(date)
+            emailList.push({ timeUTC, timeLocal, email: from })
           }
         }
       }
     }
 
-    // 读取 INBOX 和 SPAM（垃圾邮件）
     await fetchEmails('INBOX')
     await fetchEmails('[Gmail]/Spam')
 

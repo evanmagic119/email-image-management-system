@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import LoadingBackdrop from '@/components/LoadingBackdrop'
 import { useLatestImage } from '@/context/LatestImageContext'
+import { uploadToR2 } from '@/lib/uploadToR2'
 
 interface ImageItem {
   key: string
@@ -91,10 +92,7 @@ export default function ImageManagerPage() {
     setUploadingKey('default')
     try {
       const defaultImageUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE}/default-image`
-
-      const res = await fetch(defaultImageUrl, {
-        cache: 'no-store'
-      })
+      const res = await fetch(defaultImageUrl, { cache: 'no-store' })
 
       if (!res.ok) {
         console.error('无法从 R2 获取默认图片')
@@ -112,23 +110,9 @@ export default function ImageManagerPage() {
       const filename = `${timestamp}.png`
       const file = new File([blob], filename, { type: 'image/png' })
 
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('filename', filename)
+      await uploadToR2(file, filename)
 
-      const uploadRes = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await uploadRes.json()
-
-      if (!uploadRes.ok) {
-        console.error('上传失败:', data.error || '未知错误')
-        return
-      }
       await refreshLatestImage()
-
       await fetchImages(1)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -148,24 +132,9 @@ export default function ImageManagerPage() {
     setUploadingKey(key)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('filename', key)
-
-      const res = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        console.error('上传失败:', data.error)
-        alert('替换失败：' + (data.error || '上传接口返回失败'))
-        return
-      }
+      await uploadToR2(file, key)
 
       await refreshLatestImage()
-
       await fetchImages(1)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)

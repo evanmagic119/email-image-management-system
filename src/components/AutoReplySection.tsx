@@ -47,6 +47,7 @@ import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import LoadingBackdrop from '@/components/LoadingBackdrop'
 import { useLatestImage } from '@/context/LatestImageContext'
+import { uploadToR2 } from '@/lib/uploadToR2'
 
 export function AutoReplySection() {
   const [recipient, setRecipient] = useState('')
@@ -455,34 +456,21 @@ export function AutoReplySection() {
                   return
                 }
 
-                const filename = file.name
-                const formData = new FormData()
-                formData.append('file', file)
-                formData.append('filename', filename)
-
                 try {
-                  const res = await fetch('/api/files/upload', {
+                  const key = file.name
+                  const url = await uploadToR2(file, key)
+
+                  setAttachment({ file, url })
+
+                  const saveRes = await fetch('/api/emails/auto-reply/save', {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ attachmentUrl: url })
                   })
-                  const data = await res.json()
 
-                  if (res.ok && data.url) {
-                    setAttachment({ file, url: data.url })
-
-                    const saveRes = await fetch('/api/emails/auto-reply/save', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        attachmentUrl: data.url
-                      })
-                    })
-                    if (!saveRes.ok) {
-                      const saveData = await saveRes.json()
-                      alert('附件已上传，但保存数据库失败: ' + saveData.error)
-                    }
-                  } else {
-                    alert('上传失败: ' + (data.error || '未知错误'))
+                  if (!saveRes.ok) {
+                    const saveData = await saveRes.json()
+                    alert('附件已上传，但保存数据库失败: ' + saveData.error)
                   }
                 } catch (err) {
                   console.error('上传失败:', err)
