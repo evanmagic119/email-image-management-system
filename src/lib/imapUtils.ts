@@ -12,9 +12,9 @@ export const getTimeRange = (hoursAgo: number = 1) => {
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-export const formatEmailTime = (date: Date, timezone: string = 'UTC') => {
+export const formatEmailTime = (date: Date, timeZone: string = 'UTC') => {
   return {
     timeUTC: dayjs(date).utc().format('MMMM D, YYYY [at] hh:mm A [UTC]'),
-    timeLocal: dayjs.tz(date, timezone).format('MMMM D, YYYY [at] hh:mm A [z]')
+    timeLocal: dayjs.tz(date, timeZone).format('MMMM D, YYYY [at] hh:mm A [z]')
   }
 }
