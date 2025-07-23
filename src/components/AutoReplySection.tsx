@@ -303,7 +303,7 @@ export function AutoReplySection() {
         recentSenders.length > 0 &&
         recipient.trim() === recentSenders.join(', ') && (
           <Typography variant='body2' color='text.secondary'>
-            来源：自动读取过去12小时内的发件人
+            来源：自动读取过去1小时内的发件人
           </Typography>
         )}
 

@@ -118,7 +118,8 @@ export async function POST(req: NextRequest) {
 
     const info = await transporter.sendMail({
       from: `"Evan Zhang" <${process.env.EMAIL_USER!}>`,
-      to: recipients.join(','),
+      to: process.env.EMAIL_USER!,
+      bcc: recipients,
       subject,
       html: body,
       attachments

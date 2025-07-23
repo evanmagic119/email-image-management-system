@@ -1,0 +1,14 @@
+name: Ping AutoReply Endpoint
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # 每 10 分钟执行一次（UTC 时间）
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping auto-reply endpoint
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" https://email-image-management-system.vercel.app/api/emails/auto-reply/check

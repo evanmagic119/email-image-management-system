@@ -18,7 +18,8 @@ export async function GET() {
   const [hour, minute] = setting.replyTime.split(':').map(Number)
   const todayTarget = new Date()
   todayTarget.setHours(hour, minute, 0, 0)
-
+  console.log('now', now)
+  console.log('todayTarget', todayTarget)
   if (now < todayTarget) {
     return NextResponse.json({ status: 'pending', reason: 'Time not reached' })
   }
