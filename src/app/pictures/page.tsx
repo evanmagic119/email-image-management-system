@@ -128,6 +128,12 @@ export default function ImageManagerPage() {
       alert('非法文件名，无法替换')
       return
     }
+
+    if (file.size > 25 * 1024 * 1024) {
+      alert('文件不能超过 25MB')
+      return
+    }
+
     setIsLoading(true)
     setUploadingKey(key)
 

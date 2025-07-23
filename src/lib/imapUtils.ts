@@ -15,8 +15,6 @@ export const getTimeRange = (hoursAgo: number = 1) => {
 export const formatEmailTime = (date: Date) => {
   return {
     timeUTC: dayjs(date).utc().format('MMMM D, YYYY [at] hh:mm A [UTC]'),
-    timeLocal: dayjs(date)
-      .tz(dayjs.tz.guess())
-      .format('MMMM D, YYYY [at] hh:mm A [GMT]Z')
+    timeLocal: dayjs(date).format('MMMM D, YYYY [at] hh:mm A [Z]')
   }
 }
