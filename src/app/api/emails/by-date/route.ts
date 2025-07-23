@@ -1,11 +1,18 @@
+// api/emails/by-date
+
 import { ImapFlow } from 'imapflow'
 import { NextRequest, NextResponse } from 'next/server'
-import { formatEmailTime } from '@/lib/imapUtils'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import 'dotenv/config'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export async function POST(req: NextRequest) {
   const { start, end } = await req.json()
 
-  console.log('start, end', start, end)
   if (!start || !end) {
     return NextResponse.json(
       { error: 'Missing start or end time' },
@@ -29,31 +36,33 @@ export async function POST(req: NextRequest) {
 
   try {
     await client.connect()
+    await client.mailboxOpen('INBOX')
 
     const emailList: { timeUTC: string; timeLocal: string; email: string }[] =
       []
 
-    const fetchEmails = async (mailbox: string) => {
-      await client.mailboxOpen(mailbox)
-      for await (const msg of client.fetch('1:*', { envelope: true })) {
-        const msgDate = msg.envelope?.date
-        const from = msg.envelope?.from?.[0]?.address
-        if (msgDate && from) {
-          const date = new Date(msgDate)
-          if (
-            date >= startTime &&
-            date <= endTime &&
-            from !== process.env.EMAIL_USER!
-          ) {
-            const { timeUTC, timeLocal } = formatEmailTime(date)
-            emailList.push({ timeUTC, timeLocal, email: from })
-          }
+    for await (const msg of client.fetch('1:*', { envelope: true })) {
+      const msgDate = msg.envelope?.date
+      const from = msg.envelope?.from?.[0]?.address
+
+      if (msgDate && from) {
+        const date = new Date(msgDate)
+        if (date >= startTime && date <= endTime) {
+          const utcTimeStr = dayjs(date)
+            .utc()
+            .format('MMMM D, YYYY [at] hh:mm A [UTC]')
+          const localTimeStr = dayjs(date)
+            .tz(dayjs.tz.guess())
+            .format('MMMM D, YYYY [at] hh:mm A [GMT]Z')
+
+          emailList.push({
+            timeUTC: utcTimeStr,
+            timeLocal: localTimeStr,
+            email: from
+          })
         }
       }
     }
-
-    await fetchEmails('INBOX')
-    await fetchEmails('[Gmail]/Spam')
 
     await client.logout()
     return NextResponse.json({ emails: emailList })
