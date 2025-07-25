@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import nodemailer from 'nodemailer'
 import { getPendingRecipients } from '@/lib/getPendingRecipients'
 import axios from 'axios'
+import { DateTime } from 'luxon'
 
 const prisma = new PrismaClient()
 
@@ -15,10 +16,11 @@ export async function GET() {
     return NextResponse.json({ status: 'skipped', reason: 'Not active' })
   }
 
-  const now = new Date()
-  const [hour, minute] = setting.replyTime.split(':').map(Number)
-  const todayTarget = new Date()
-  todayTarget.setHours(hour, minute, 0, 0)
+  const [timeStr, timeZone] = setting.replyTime.split('@')
+  const [hour, minute] = timeStr.split(':').map(Number)
+
+  const now = DateTime.now().setZone(timeZone || 'UTC')
+  const todayTarget = now.set({ hour, minute, second: 0, millisecond: 0 })
 
   if (now < todayTarget) {
     return NextResponse.json({ status: 'pending', reason: 'Time not reached' })

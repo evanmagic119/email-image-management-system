@@ -37,6 +37,7 @@
     "formidable": "^3.5.4",
     "imapflow": "^1.0.189",
     "js-sha256": "^0.11.1",
+    "luxon": "^3.7.1",
     "next": "15.3.4",
     "next-auth": "^4.24.11",
     "node-cron": "^4.2.0",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/formidable": "^3.4.5",
+    "@types/luxon": "^3.6.2",
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",

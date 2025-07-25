@@ -252,6 +252,8 @@ export function AutoReplySection() {
     const html = editor?.getHTML() || ''
     const rawHtml = body
     const mode = showHtml ? 'html' : 'editor'
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const formattedTime = dayjs(replyTime).format('HH:mm')
 
     try {
       setIsLoading(true)
@@ -266,7 +268,7 @@ export function AutoReplySection() {
           isUsingLatestImage,
           imageUrl: isUsingLatestImage && latestImage ? latestImage.url : null,
           attachmentUrl: attachment?.url || null,
-          replyTime: replyTime?.format('HH:mm') || '',
+          replyTime: `${formattedTime}@${userTimeZone}`,
           isActive
         })
       })
