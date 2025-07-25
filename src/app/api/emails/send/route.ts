@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     const info = await transporter.sendMail({
       from: `"Evan Zhang" <${process.env.EMAIL_USER!}>`,
-      to: process.env.EMAIL_USER!,
+      // to: process.env.EMAIL_USER!,
       bcc: recipients,
       subject,
       html,

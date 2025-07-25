@@ -79,7 +79,7 @@ export async function GET() {
     // ✅ 发送正式自动回复邮件
     await transporter.sendMail({
       from: `"Evan Zhang" <${process.env.EMAIL_USER!}>`,
-      to: process.env.EMAIL_USER!,
+      // to: process.env.EMAIL_USER!,
       bcc: recipients,
       subject: setting.subject,
       html,
