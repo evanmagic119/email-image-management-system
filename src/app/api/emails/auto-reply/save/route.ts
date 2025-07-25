@@ -1,12 +1,14 @@
-// app/api/emails/auto-reply/save/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   const data = await req.json()
+
   const {
     subject,
     body,
+    rawBody,
+    mode,
     isUsingLatestImage,
     imageUrl,
     attachmentUrl,
@@ -19,6 +21,8 @@ export async function POST(req: NextRequest) {
       'attachmentUrl' in data &&
       !('subject' in data) &&
       !('body' in data) &&
+      !('rawBody' in data) &&
+      !('mode' in data) &&
       !('isUsingLatestImage' in data) &&
       !('imageUrl' in data) &&
       !('replyTime' in data) &&
@@ -34,6 +38,8 @@ export async function POST(req: NextRequest) {
           id: 1,
           subject: '',
           body: '',
+          rawBody: null,
+          mode: 'editor',
           isUsingLatestImage: false,
           imageUrl: null,
           attachmentUrl,
@@ -45,13 +51,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, setting })
     }
 
-    // 其余字段必须完整才执行完整保存
+    // ✅ 参数完整性校验（body 或 rawBody 必须有一个）
     if (
       !subject ||
-      !body ||
+      (!body && !rawBody) ||
       isUsingLatestImage === undefined ||
       isActive === undefined ||
-      !replyTime
+      !replyTime ||
+      !mode
     ) {
       return NextResponse.json({ error: '参数不完整' }, { status: 400 })
     }
@@ -61,9 +68,11 @@ export async function POST(req: NextRequest) {
       update: {
         subject,
         body,
+        rawBody,
+        mode,
         isUsingLatestImage,
         imageUrl: imageUrl || null,
-        attachmentUrl: attachmentUrl ?? null, // 支持 null 和 undefined
+        attachmentUrl: attachmentUrl ?? null,
         replyTime,
         isActive
       },
@@ -71,6 +80,8 @@ export async function POST(req: NextRequest) {
         id: 1,
         subject,
         body,
+        rawBody,
+        mode,
         isUsingLatestImage,
         imageUrl: imageUrl || null,
         attachmentUrl: attachmentUrl ?? null,

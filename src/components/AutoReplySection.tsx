@@ -92,9 +92,6 @@ export function AutoReplySection() {
       FontSize.configure({ types: ['textStyle'] })
     ],
     content: '',
-    onUpdate: ({ editor }) => {
-      setBody(editor.getHTML())
-    },
     editorProps: {
       attributes: {
         style:
@@ -139,7 +136,22 @@ export function AutoReplySection() {
       return
     }
 
-    let html = editor?.getHTML() || ''
+    let editorHtml = editor?.getHTML() || ''
+    let rawHtml = body
+
+    const imageTag =
+      isUsingLatestImage && latestImage?.url
+        ? `<p><img src="${latestImage.url}" style="max-width: 100%; width: 400px; height: auto; display: block; margin: 12px 0;" /></p>`
+        : ''
+
+    if (showHtml) {
+      rawHtml += imageTag
+    } else {
+      editorHtml += imageTag
+    }
+
+    const html = showHtml ? rawHtml : editorHtml
+
     const isEmptyHtml =
       html.replace(/<p>(<br\s*\/?>|\s|&nbsp;)*<\/p>/gi, '').trim() === ''
 
@@ -148,16 +160,12 @@ export function AutoReplySection() {
       return
     }
 
-    // ✅ 如果启用了“插入最新图片”功能，则附加图片到正文末尾
-    if (isUsingLatestImage && latestImage?.url) {
-      const imageTag = `<p><img src="${latestImage.url}" style="max-width: 100%; width: 400px; height: auto; display: block; margin: 12px 0;" /></p>`
-      html += imageTag
-    }
-
     const formData = new FormData()
     formData.append('recipients', JSON.stringify(recipients))
     formData.append('subject', subject)
-    formData.append('body', html)
+    formData.append('mode', showHtml ? 'html' : 'editor')
+    formData.append('body', editorHtml)
+    formData.append('rawBody', showHtml ? rawHtml : '')
 
     if (attachment) {
       formData.append('attachmentUrl', attachment.url)
@@ -196,6 +204,8 @@ export function AutoReplySection() {
         const {
           subject,
           body,
+          rawBody,
+          mode,
           isUsingLatestImage,
           attachmentUrl,
           replyTime,
@@ -203,13 +213,19 @@ export function AutoReplySection() {
         } = json.data
 
         setSubject(subject)
-        setBody(body)
         setIsUsingLatestImage(isUsingLatestImage)
         setReplyTime(dayjs(replyTime, 'HH:mm'))
         setIsActive(isActive)
 
-        if (editor) {
-          editor.commands.setContent(body)
+        if (mode === 'html') {
+          setShowHtml(true)
+          setBody(rawBody || '')
+        } else {
+          setShowHtml(false)
+          setBody(body)
+          if (editor) {
+            editor.commands.setContent(body || '')
+          }
         }
 
         if (attachmentUrl) {
@@ -233,7 +249,9 @@ export function AutoReplySection() {
     if (!replyTime) return alert('请选择时间')
     if (!subject || !editor) return alert('请填写完整内容')
 
-    const html = editor.getHTML()
+    const html = editor?.getHTML() || ''
+    const rawHtml = body
+    const mode = showHtml ? 'html' : 'editor'
 
     try {
       setIsLoading(true)
@@ -243,6 +261,8 @@ export function AutoReplySection() {
         body: JSON.stringify({
           subject,
           body: html,
+          rawBody: rawHtml,
+          mode,
           isUsingLatestImage,
           imageUrl: isUsingLatestImage && latestImage ? latestImage.url : null,
           attachmentUrl: attachment?.url || null,
@@ -437,10 +457,15 @@ export function AutoReplySection() {
           </IconButton>
         </Tooltip>
         <Tooltip title='编辑 HTML'>
-          <IconButton size='small' onClick={() => setShowHtml(!showHtml)}>
+          <IconButton
+            size='small'
+            onClick={() => setShowHtml(!showHtml)}
+            color={showHtml ? 'primary' : 'default'} // ✅ 改变颜色
+          >
             <CodeIcon />
           </IconButton>
         </Tooltip>
+
         <Tooltip title='添加附件'>
           <IconButton size='small' component='label'>
             <AttachFileIcon />
@@ -483,16 +508,32 @@ export function AutoReplySection() {
       </Stack>
 
       {showHtml ? (
-        <TextField
-          multiline
-          minRows={10}
-          value={body}
-          onChange={e => {
-            setBody(e.target.value)
-            editor?.commands.setContent(e.target.value)
-          }}
-          fullWidth
-        />
+        <>
+          <TextField
+            multiline
+            minRows={10}
+            value={body}
+            onChange={e => setBody(e.target.value)}
+            fullWidth
+            label='直接输入 HTML 内容'
+          />
+
+          <Box mt={2}>
+            <Typography variant='subtitle1' gutterBottom>
+              实时预览（不会展示隐藏元素）
+            </Typography>
+            <Box
+              sx={{
+                border: '1px solid #ccc',
+                borderRadius: '6px',
+                padding: 2,
+                minHeight: '100px',
+                background: '#fafafa'
+              }}
+              dangerouslySetInnerHTML={{ __html: body }}
+            />
+          </Box>
+        </>
       ) : (
         <EditorContent editor={editor} />
       )}

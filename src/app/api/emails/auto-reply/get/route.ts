@@ -15,6 +15,8 @@ export async function GET() {
       data: {
         subject: setting.subject,
         body: setting.body,
+        rawBody: setting.rawBody,
+        mode: setting.mode,
         isUsingLatestImage: setting.isUsingLatestImage,
         replyTime: setting.replyTime,
         imageUrl: setting.imageUrl,

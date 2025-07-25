@@ -11,6 +11,8 @@ model AutoReplySetting {
   id                 Int      @id @default(1)
   subject            String
   body               String
+  rawBody            String?  @map("raw_body")
+  mode               String   @default("editor")
   isUsingLatestImage Boolean  @default(false) @map("use_latest_image")
   imageUrl           String?  @map("image_url")
   attachmentUrl      String?  @map("attachment_url")

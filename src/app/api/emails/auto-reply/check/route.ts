@@ -20,9 +20,6 @@ export async function GET() {
   const todayTarget = new Date()
   todayTarget.setHours(hour, minute, 0, 0)
 
-  console.log('now', now)
-  console.log('todayTarget', todayTarget)
-
   if (now < todayTarget) {
     return NextResponse.json({ status: 'pending', reason: 'Time not reached' })
   }
@@ -69,8 +66,8 @@ export async function GET() {
       ]
     }
 
+    let html = setting.mode === 'html' ? setting.rawBody || '' : setting.body
     // 🖼️ 自动插入图片（如果开启 isUsingLatestImage）
-    let html = setting.body
     if (setting.isUsingLatestImage && setting.imageUrl) {
       const alreadyHasImage = html.includes(setting.imageUrl)
       if (!alreadyHasImage) {

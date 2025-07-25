@@ -50,7 +50,12 @@ export async function POST(req: NextRequest) {
 
     const recipientsRaw = getFieldString(fields.recipients)
     const subject = getFieldString(fields.subject)
-    const body = getFieldString(fields.body)
+    const mode = getFieldString(fields.mode) || 'editor'
+    const editorBody = getFieldString(fields.body)
+    const rawBody = getFieldString(fields.rawBody)
+
+    const html = mode === 'html' ? rawBody || editorBody : editorBody || rawBody
+
     const attachmentUrl = getFieldString(fields.attachmentUrl)
     const attachmentName = getFieldString(fields.attachmentName)
 
@@ -68,7 +73,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!recipients.length || !subject || !body) {
+    if (!recipients.length || !subject || !html) {
       return new Response(
         JSON.stringify({
           error: 'Missing required fields: recipients, subject, or body'
@@ -121,7 +126,7 @@ export async function POST(req: NextRequest) {
       to: process.env.EMAIL_USER!,
       bcc: recipients,
       subject,
-      html: body,
+      html,
       attachments
     })
 
