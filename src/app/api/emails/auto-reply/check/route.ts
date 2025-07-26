@@ -46,6 +46,11 @@ export async function GET() {
         html: `<p>过去1小时内，没有需要自动回复的发件人。</p>`
       })
 
+      await prisma.autoReplySetting.update({
+        where: { id: 1 },
+        data: { isActive: false }
+      })
+
       return NextResponse.json({ status: 'no-recipients' })
     }
 
