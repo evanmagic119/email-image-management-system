@@ -274,11 +274,10 @@ export function AutoReplySection() {
       })
 
       const data = await res.json()
-
-      if (res.ok) {
-        alert('设置已保存！')
+      if (res.ok && data.success) {
+        alert(`设置已保存！下次将在 ${data.nextSendIn} 后发送`)
       } else {
-        alert('保存失败：' + data.error)
+        alert('保存失败')
       }
     } catch (err) {
       console.error('保存出错:', err)

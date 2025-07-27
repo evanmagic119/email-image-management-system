@@ -16,14 +16,28 @@ export async function GET() {
     return NextResponse.json({ status: 'skipped', reason: 'Not active' })
   }
 
-  const [timeStr, timeZone] = setting.replyTime.split('@')
-  const [hour, minute] = timeStr.split(':').map(Number)
-
+  // ✅ 新格式："2025-07-28T23:00@America/Toronto"
+  const [dateTimeStr, timeZone] = setting.replyTime.split('@')
+  const targetTime = DateTime.fromISO(dateTimeStr, { zone: timeZone || 'UTC' })
   const now = DateTime.now().setZone(timeZone || 'UTC')
-  const todayTarget = now.set({ hour, minute, second: 0, millisecond: 0 })
 
-  if (now < todayTarget) {
-    return NextResponse.json({ status: 'pending', reason: 'Time not reached' })
+  if (now < targetTime) {
+    const diffMinutes = Math.round(targetTime.diff(now, 'minutes').minutes)
+
+    let nextSendIn = ''
+    if (diffMinutes < 60) {
+      nextSendIn = `${diffMinutes} 分钟`
+    } else {
+      const h = Math.floor(diffMinutes / 60)
+      const m = diffMinutes % 60
+      nextSendIn = m === 0 ? `${h} 小时` : `${h} 小时 ${m} 分钟`
+    }
+
+    return NextResponse.json({
+      status: 'pending',
+      reason: 'Time not reached',
+      nextSendIn
+    })
   }
 
   try {
@@ -37,7 +51,6 @@ export async function GET() {
       }
     })
 
-    // 📭 无收件人提醒
     if (recipients.length === 0) {
       await transporter.sendMail({
         from: `"AutoReply System" <${process.env.EMAIL_USER!}>`,
@@ -54,7 +67,6 @@ export async function GET() {
       return NextResponse.json({ status: 'no-recipients' })
     }
 
-    // 📎 附件处理（远程 URL → Buffer）
     let attachments
     if (setting.attachmentUrl) {
       const filename = decodeURIComponent(
@@ -74,7 +86,6 @@ export async function GET() {
     }
 
     let html = setting.mode === 'html' ? setting.rawBody || '' : setting.body
-    // 🖼️ 自动插入图片（如果开启 isUsingLatestImage）
     if (setting.isUsingLatestImage && setting.imageUrl) {
       const alreadyHasImage = html.includes(setting.imageUrl)
       if (!alreadyHasImage) {
@@ -83,31 +94,25 @@ export async function GET() {
       }
     }
 
-    // ✅ 发送正式自动回复邮件
     await transporter.sendMail({
       from: `"Evan Zhang" <${process.env.EMAIL_USER!}>`,
-      // to: process.env.EMAIL_USER!,
       bcc: recipients,
       subject: setting.subject,
       html,
       attachments
     })
 
-    // ✅ 通知邮件
     await transporter.sendMail({
       from: `"AutoReply System" <${process.env.EMAIL_USER!}>`,
       to: process.env.EMAIL_USER!,
       subject: '✅ 自动回复已发送',
       html: `
         <p>自动回复已成功发送给以下 ${recipients.length} 位用户：</p>
-        <ul>
-          ${recipients.map(email => `<li>${email}</li>`).join('')}
-        </ul>
+        <ul>${recipients.map(email => `<li>${email}</li>`).join('')}</ul>
         <p>主题：<strong>${setting.subject}</strong></p>
       `
     })
 
-    // ✅ 更新状态为非激活
     await prisma.autoReplySetting.update({
       where: { id: 1 },
       data: { isActive: false }
